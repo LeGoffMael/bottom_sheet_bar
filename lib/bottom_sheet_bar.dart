@@ -62,6 +62,14 @@ class BottomSheetBar extends StatefulWidget {
   /// Defaults to [true]
   final bool locked;
 
+  /// Provides the range of opacity animation for the [expandedBuilder] widget
+  /// Defaults to [Tween(begin: -13.0, end: 1.0)].
+  final Tween<double>? expandedTween;
+
+  /// Provides the range of opacity animation for the [collapsed] widget
+  /// Defaults to [Tween(begin: 1.0, end: 0.0)].
+  final Tween<double>? collapsedTween;
+
   const BottomSheetBar({
     required this.body,
     required this.expandedBuilder,
@@ -78,6 +86,8 @@ class BottomSheetBar extends StatefulWidget {
     this.velocityMin = 320.0,
     this.backButtonListener = false,
     this.willPopScope = false,
+    this.collapsedTween,
+    this.expandedTween,
     Key? key,
   })  : assert(!(willPopScope && backButtonListener)),
         super(key: key);
@@ -234,7 +244,8 @@ class _BottomSheetBarState extends State<BottomSheetBar>
                               widget.height,
                           width: double.infinity,
                           child: FadeTransition(
-                            opacity: Tween(begin: 1.0, end: 0.0)
+                            opacity: (widget.collapsedTween ??
+                                    Tween(begin: 1.0, end: 0.0))
                                 .animate(_controller.animationController),
                             child: widget.collapsed,
                           ),
@@ -251,7 +262,8 @@ class _BottomSheetBarState extends State<BottomSheetBar>
                     ignoring: _controller.isCollapsed,
                     child: SafeArea(
                       child: FadeTransition(
-                        opacity: Tween(begin: -13.0, end: 1.0)
+                        opacity: (widget.expandedTween ??
+                                Tween(begin: -13.0, end: 1.0))
                             .animate(_controller.animationController),
                         child: RepaintBoundary(
                           child: MeasureSize(
