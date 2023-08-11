@@ -36,7 +36,6 @@ class BottomSheetBarListener extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Listener(
-        behavior: HitTestBehavior.translucent,
         onPointerSignal: (ps) {
           if (!locked && ps is PointerScrollEvent) {
             onScroll(ps.delta.dy);

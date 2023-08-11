@@ -15,12 +15,13 @@ class BottomSheetBarPage extends StatefulWidget {
   BottomSheetBarPageState createState() => BottomSheetBarPageState();
 }
 
-class BottomSheetBarPageState extends State<BottomSheetBarPage> {
+class BottomSheetBarPageState extends State<BottomSheetBarPage>
+    with SingleTickerProviderStateMixin {
   bool _isLocked = false;
   bool _isCollapsed = true;
   bool _isExpanded = false;
   int _listSize = 5;
-  final _bsbController = BottomSheetBarController();
+  late final _bsbController = BottomSheetBarController(vsync: this);
   final _listSizeController = TextEditingController(text: '5');
 
   @override

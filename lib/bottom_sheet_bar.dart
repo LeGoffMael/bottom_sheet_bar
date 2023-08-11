@@ -91,14 +91,21 @@ class BottomSheetBar extends StatefulWidget {
 /// events. The expanded or collapsed state can also be determined through this
 /// controller.
 class BottomSheetBarController {
-  AnimationController? _animationController;
+  BottomSheetBarController({required TickerProvider vsync}) {
+    animationController = AnimationController(
+      vsync: vsync,
+      duration: const Duration(milliseconds: 250),
+    );
+  }
+
+  late AnimationController animationController;
   final _listeners = <Function()>[];
 
   /// Only returns [true] if the bottom sheet is fully collapsed
-  bool get isCollapsed => _animationController?.value == 0.0;
+  bool get isCollapsed => animationController.value == 0.0;
 
   /// Only returns [true] if the bottom sheet is fully expanded
-  bool get isExpanded => _animationController?.value == 1.0;
+  bool get isExpanded => animationController.value == 1.0;
 
   /// Adds a function to be called on every animation frame
   void addListener(Function() listener) => _listeners.add(listener);
@@ -107,28 +114,29 @@ class BottomSheetBarController {
   /// [BottomSheetBar] to this controller. Unless you're using advanced
   /// animation techniques, you probably won't ever need to use this method.
   void attach(AnimationController animationController) {
-    _animationController?.removeListener(_listener);
-    _animationController = animationController;
-    _animationController?.addListener(_listener);
+    animationController.removeListener(_listener);
+    animationController = animationController;
+    animationController.addListener(_listener);
   }
 
   /// Collapse the bottom sheet built by [BottomSheetBar.expandedBuilder]
-  Future? collapse() => _animationController
-      ?.fling(velocity: -1.0)
-      .then((_) => _animationController?.animateTo(0.0));
+  Future collapse() => animationController
+      .fling(velocity: -1.0)
+      .then((_) => animationController.animateTo(0.0));
 
   /// Removes all previously added listeners
   void dispose() {
     for (var listener in _listeners) {
       removeListener(listener);
-      _animationController?.removeListener(listener);
+      animationController.removeListener(listener);
     }
+    animationController.dispose();
   }
 
   /// Expand the bottom sheet built by [BottomSheetBar.expandedBuilder]
-  Future? expand() => _animationController
-      ?.fling(velocity: 1.0)
-      .then((_) => _animationController?.animateTo(1.0));
+  Future expand() => animationController
+      .fling(velocity: 1.0)
+      .then((_) => animationController.animateTo(1.0));
 
   /// Remove a previously added listener
   void removeListener(Function listener) => _listeners.remove(listener);
@@ -148,8 +156,8 @@ class _BottomSheetBarState extends State<BottomSheetBar>
   bool _isScrolled = false;
   Size _expandedSize = Size.zero;
 
-  late AnimationController _animationController;
-  late BottomSheetBarController _controller;
+  late final BottomSheetBarController _controller =
+      widget.controller ?? BottomSheetBarController(vsync: this);
 
   double get _heightDiff => _expandedSize.height - widget.height;
 
@@ -170,7 +178,7 @@ class _BottomSheetBarState extends State<BottomSheetBar>
 
         // Backdrop
         AnimatedBuilder(
-          animation: _animationController,
+          animation: _controller.animationController,
           child: Container(
             height: MediaQuery.of(context).size.height,
             width: MediaQuery.of(context).size.width,
@@ -186,7 +194,7 @@ class _BottomSheetBarState extends State<BottomSheetBar>
               },
               onTap: _controller.collapse,
               child: FadeTransition(
-                opacity: _animationController,
+                opacity: _controller.animationController,
                 child: child,
               ),
             ),
@@ -200,7 +208,7 @@ class _BottomSheetBarState extends State<BottomSheetBar>
           onPosition: _velocityTracker.addPosition,
           onScroll: _eventMove,
           child: AnimatedBuilder(
-            animation: _animationController,
+            animation: _controller.animationController,
             builder: (context, child) => Stack(
               children: [
                 Align(
@@ -216,17 +224,18 @@ class _BottomSheetBarState extends State<BottomSheetBar>
                         borderRadius: BorderRadius.lerp(
                           widget.borderRadius,
                           widget.borderRadiusExpanded ?? widget.borderRadius,
-                          _animationController.value,
+                          _controller.animationController.value,
                         ),
                       ),
                       child: SafeArea(
                         child: SizedBox(
-                          height: _animationController.value * _heightDiff +
+                          height: _controller.animationController.value *
+                                  _heightDiff +
                               widget.height,
                           width: double.infinity,
                           child: FadeTransition(
                             opacity: Tween(begin: 1.0, end: 0.0)
-                                .animate(_animationController),
+                                .animate(_controller.animationController),
                             child: widget.collapsed,
                           ),
                         ),
@@ -243,7 +252,7 @@ class _BottomSheetBarState extends State<BottomSheetBar>
                     child: SafeArea(
                       child: FadeTransition(
                         opacity: Tween(begin: -13.0, end: 1.0)
-                            .animate(_animationController),
+                            .animate(_controller.animationController),
                         child: RepaintBoundary(
                           child: MeasureSize(
                             onChange: (size) =>
@@ -264,7 +273,7 @@ class _BottomSheetBarState extends State<BottomSheetBar>
 
     if (widget.willPopScope) {
       return AnimatedBuilder(
-        animation: _animationController,
+        animation: _controller.animationController,
         builder: (context, _) {
           return WillPopScope(
             onWillPop: _controller.isExpanded
@@ -296,38 +305,32 @@ class _BottomSheetBarState extends State<BottomSheetBar>
 
   @override
   void dispose() {
-    _animationController.dispose();
+    if (widget.controller == null) {
+      _controller.dispose();
+    }
     super.dispose();
   }
 
   @override
   void initState() {
     super.initState();
-
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 250),
-    );
-
     _scrollController.addListener(() {
       if (widget.locked || _isScrolled) return;
       _jumpToZero();
     });
-
-    _controller = widget.controller ?? BottomSheetBarController();
-    _controller.attach(_animationController);
   }
 
   void _eventEnd(Velocity velocity) {
-    if (_animationController.isAnimating ||
+    if (_controller.animationController.isAnimating ||
         (_controller.isExpanded && _isScrolled)) {
       return;
     } else if (velocity.pixelsPerSecond.dy.abs() >= widget.velocityMin &&
         _heightDiff > 0) {
-      _animationController.fling(
+      _controller.animationController.fling(
         velocity: -1 * (velocity.pixelsPerSecond.dy / _heightDiff),
       );
-    } else if ((1 - _animationController.value) > _animationController.value) {
+    } else if ((1 - _controller.animationController.value) >
+        _controller.animationController.value) {
       _controller.collapse();
     } else {
       _controller.expand();
@@ -339,7 +342,7 @@ class _BottomSheetBarState extends State<BottomSheetBar>
       return;
     }
     if (!_isScrolled) {
-      _animationController.value -= dy / _heightDiff;
+      _controller.animationController.value -= dy / _heightDiff;
     }
 
     if (!_scrollController.hasClients) {
