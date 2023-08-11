@@ -25,6 +25,9 @@ class BottomSheetBar extends StatefulWidget {
   /// [ScrollController] to the scrollable widget.
   final Widget Function(ScrollController) expandedBuilder;
 
+  /// The height of the expanded toolbar. Will be measured if `null`.
+  final double? expandedHeight;
+
   /// A [Widget] to be displayed on the toolbar in its collapsed state. When
   /// null, the toolbar will be empty.
   final Widget? collapsed;
@@ -63,7 +66,7 @@ class BottomSheetBar extends StatefulWidget {
   final bool locked;
 
   /// Provides the range of opacity animation for the [expandedBuilder] widget
-  /// Defaults to [Tween(begin: -13.0, end: 1.0)].
+  /// Defaults to [Tween(begin: 0.0, end: 1.0)].
   final Tween<double>? expandedTween;
 
   /// Provides the range of opacity animation for the [collapsed] widget
@@ -80,6 +83,7 @@ class BottomSheetBar extends StatefulWidget {
     this.borderRadius,
     this.borderRadiusExpanded,
     this.boxShadows,
+    this.expandedHeight,
     this.height = kToolbarHeight,
     this.isDismissable = true,
     this.locked = true,
@@ -169,7 +173,8 @@ class _BottomSheetBarState extends State<BottomSheetBar>
   late final BottomSheetBarController _controller =
       widget.controller ?? BottomSheetBarController(vsync: this);
 
-  double get _heightDiff => _expandedSize.height - widget.height;
+  double get _expandedHeight => widget.expandedHeight ?? _expandedSize.height;
+  double get _heightDiff => _expandedHeight - widget.height;
 
   @override
   Widget build(BuildContext context) {
@@ -256,20 +261,31 @@ class _BottomSheetBarState extends State<BottomSheetBar>
                 ),
 
                 /// Expanded widget
-                Align(
-                  alignment: Alignment.bottomCenter,
-                  child: IgnorePointer(
-                    ignoring: _controller.isCollapsed,
-                    child: SafeArea(
-                      child: FadeTransition(
-                        opacity: (widget.expandedTween ??
-                                Tween(begin: -13.0, end: 1.0))
-                            .animate(_controller.animationController),
-                        child: RepaintBoundary(
-                          child: MeasureSize(
-                            onChange: (size) =>
-                                setState(() => _expandedSize = size),
-                            child: widget.expandedBuilder(_scrollController),
+                Positioned(
+                  bottom: _controller.animationController.value * _heightDiff -
+                      _heightDiff,
+                  width: MediaQuery.of(context).size.width,
+                  height: _expandedHeight,
+                  child: Align(
+                    alignment: Alignment.bottomCenter,
+                    child: IgnorePointer(
+                      ignoring: _controller.isCollapsed,
+                      child: SafeArea(
+                        child: FadeTransition(
+                          opacity: (widget.expandedTween ??
+                                  Tween(begin: 0.0, end: 1.0))
+                              .animate(_controller.animationController),
+                          child: RepaintBoundary(
+                            child: widget.expandedHeight == null
+                                ? MeasureSize(
+                                    onChange: (size) {
+                                      print('size=$size');
+                                      setState(() => _expandedSize = size);
+                                    },
+                                    child: widget
+                                        .expandedBuilder(_scrollController),
+                                  )
+                                : widget.expandedBuilder(_scrollController),
                           ),
                         ),
                       ),
