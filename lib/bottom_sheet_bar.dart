@@ -73,6 +73,11 @@ class BottomSheetBar extends StatefulWidget {
   /// Defaults to [Tween(begin: 1.0, end: 0.0)].
   final Tween<double>? collapsedTween;
 
+  /// The horizontal margin around the [collapsed] widget,
+  /// will animated the bottom sheet bar width by using the [expandedTween] param.
+  /// Defaults to [0]
+  final int collapsedHorizontalMargin;
+
   const BottomSheetBar({
     required this.body,
     required this.expandedBuilder,
@@ -92,6 +97,7 @@ class BottomSheetBar extends StatefulWidget {
     this.willPopScope = false,
     this.collapsedTween,
     this.expandedTween,
+    this.collapsedHorizontalMargin = 0,
     Key? key,
   })  : assert(!(willPopScope && backButtonListener)),
         super(key: key);
@@ -227,7 +233,13 @@ class _BottomSheetBarState extends State<BottomSheetBar>
             builder: (context, child) => SizedBox(
               height: _controller.animationController.value * _heightDiff +
                   widget.height,
-              width: double.infinity,
+              width: widget.collapsedHorizontalMargin == 0
+                  ? double.infinity
+                  : (_controller.animationController.value *
+                              (widget.expandedTween?.end ?? 2)) *
+                          widget.collapsedHorizontalMargin +
+                      (MediaQuery.of(context).size.width -
+                          widget.collapsedHorizontalMargin),
               child: Stack(
                 children: [
                   Align(
