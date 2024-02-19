@@ -258,13 +258,11 @@ class _BottomSheetBarState extends State<BottomSheetBar>
                             _controller.animationController.value,
                           ),
                         ),
-                        child: SafeArea(
-                          child: FadeTransition(
-                            opacity: (widget.collapsedTween ??
-                                    Tween(begin: 1.0, end: 0.0))
-                                .animate(_controller.animationController),
-                            child: widget.collapsed,
-                          ),
+                        child: FadeTransition(
+                          opacity: (widget.collapsedTween ??
+                                  Tween(begin: 1.0, end: 0.0))
+                              .animate(_controller.animationController),
+                          child: widget.collapsed,
                         ),
                       ),
                     ),
