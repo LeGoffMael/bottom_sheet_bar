@@ -6,7 +6,7 @@ import 'package:measure_size/measure_size.dart';
 /// A toolbar that aligns to the bottom of a widget and expands into a bottom
 /// sheet.
 class BottomSheetBar extends StatefulWidget {
-  /// Enable wrapping [BottomSheetBar] in [WillPopScope]
+  /// Enable wrapping [BottomSheetBar] in [PopScope]
   final bool willPopScope;
 
   /// Enable wrapping [BottomSheetBar] in [BackButtonListener]
@@ -250,7 +250,7 @@ class _BottomSheetBarState extends State<BottomSheetBar>
                         clipBehavior: Clip.hardEdge,
                         decoration: BoxDecoration(
                           color: widget.color ??
-                              Theme.of(context).bottomAppBarColor,
+                              Theme.of(context).bottomAppBarTheme.color,
                           boxShadow: widget.boxShadows,
                           borderRadius: BorderRadius.lerp(
                             widget.borderRadius,
@@ -311,13 +311,9 @@ class _BottomSheetBarState extends State<BottomSheetBar>
       return AnimatedBuilder(
         animation: _controller.animationController,
         builder: (context, _) {
-          return WillPopScope(
-            onWillPop: _controller.isExpanded
-                ? () {
-                    _controller.collapse();
-                    return Future.value(false);
-                  }
-                : null,
+          return PopScope(
+            onPopInvoked:
+                _controller.isExpanded ? (_) => _controller.collapse() : null,
             child: child,
           );
         },
