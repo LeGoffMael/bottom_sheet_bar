@@ -15,6 +15,9 @@ class BottomSheetBarListener extends StatelessWidget {
   /// Disables bottom-sheet from being expanded or collapsed with a swipe
   final bool locked;
 
+  /// To not listen to child [ListView] scroll
+  final ScrollController? scrollController;
+
   /// Triggered on [Listener.onPointerMove] and [Listener.onPointerSignal] (when
   ///  the [PointerSignalEvent] is a [PointerScrollEvent])
   final void Function(double dy) onScroll;
@@ -32,25 +35,35 @@ class BottomSheetBarListener extends StatelessWidget {
     required this.onScroll,
     required this.onPosition,
     required this.onEnd,
+    required this.scrollController,
   }) : super(key: key);
+
+  void childScrollGuard(Function() call) {
+    if (((scrollController?.offset ?? 0) > 0)) return;
+    call();
+  }
 
   @override
   Widget build(BuildContext context) => Listener(
-        behavior: HitTestBehavior.translucent,
+        behavior: HitTestBehavior.deferToChild,
         onPointerSignal: (ps) {
           if (!locked && ps is PointerScrollEvent) {
-            onScroll(ps.delta.dy);
+            childScrollGuard(() => onScroll(ps.delta.dy));
           }
         },
         onPointerDown: locked
             ? null
-            : (event) => onPosition(event.timeStamp, event.position),
+            : (event) => childScrollGuard(
+                  () => onPosition(event.timeStamp, event.position),
+                ),
         onPointerMove: locked
             ? null
-            : (event) {
-                onPosition(event.timeStamp, event.position);
-                onScroll(event.delta.dy);
-              },
+            : (event) => childScrollGuard(
+                  () {
+                    onPosition(event.timeStamp, event.position);
+                    onScroll(event.delta.dy);
+                  },
+                ),
         onPointerUp: locked ? null : (_) => onEnd(),
         onPointerCancel: locked ? null : (_) => onEnd(),
         child: child,

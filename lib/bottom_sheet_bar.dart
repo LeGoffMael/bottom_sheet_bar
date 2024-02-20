@@ -78,6 +78,10 @@ class BottomSheetBar extends StatefulWidget {
   /// Defaults to [0]
   final int collapsedHorizontalMargin;
 
+  /// Scroll controller in the expanded widget if it is scrollable
+  /// Is used to synch the scroll with [controller]
+  final ScrollController? expandedScrollController;
+
   const BottomSheetBar({
     required this.body,
     required this.expandedBuilder,
@@ -98,6 +102,7 @@ class BottomSheetBar extends StatefulWidget {
     this.collapsedTween,
     this.expandedTween,
     this.collapsedHorizontalMargin = 0,
+    this.expandedScrollController,
     Key? key,
   })  : assert(!(willPopScope && backButtonListener)),
         super(key: key);
@@ -225,6 +230,7 @@ class _BottomSheetBarState extends State<BottomSheetBar>
         /// Collapsed widget
         BottomSheetBarListener(
           locked: widget.locked,
+          scrollController: widget.expandedScrollController,
           onEnd: () => _eventEnd(_velocityTracker.getVelocity()),
           onPosition: _velocityTracker.addPosition,
           onScroll: _eventMove,
