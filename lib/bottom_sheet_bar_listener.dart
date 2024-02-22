@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 ///
 /// There's nothing specific to [BottomSheetBar] in here. This widget just
 /// exposes a version of a [Listener] widget that is easier to use and read.
-class BottomSheetBarListener extends StatelessWidget {
+class BottomSheetBarListener extends StatefulWidget {
   final Widget child;
 
   /// Disables bottom-sheet from being expanded or collapsed with a swipe
@@ -38,34 +38,52 @@ class BottomSheetBarListener extends StatelessWidget {
     required this.scrollController,
   }) : super(key: key);
 
+  @override
+  State<BottomSheetBarListener> createState() => _BottomSheetBarListenerState();
+}
+
+class _BottomSheetBarListenerState extends State<BottomSheetBarListener> {
+  int _currentDepth = 0;
+
+  /// Do not handle scroll if come from child scroll view or
+  /// if expanded view [scrollController] is not at the top
   void childScrollGuard(Function() call) {
-    if (((scrollController?.offset ?? 0) > 0)) return;
+    if (((widget.scrollController?.offset ?? 0) > 0) || _currentDepth > 0) {
+      return;
+    }
     call();
   }
 
   @override
-  Widget build(BuildContext context) => Listener(
-        behavior: HitTestBehavior.deferToChild,
-        onPointerSignal: (ps) {
-          if (!locked && ps is PointerScrollEvent) {
-            childScrollGuard(() => onScroll(ps.delta.dy));
-          }
+  Widget build(BuildContext context) =>
+      NotificationListener<ScrollNotification>(
+        onNotification: (ScrollNotification notification) {
+          _currentDepth = notification.depth;
+          return notification.depth == 0;
         },
-        onPointerDown: locked
-            ? null
-            : (event) => childScrollGuard(
-                  () => onPosition(event.timeStamp, event.position),
-                ),
-        onPointerMove: locked
-            ? null
-            : (event) => childScrollGuard(
-                  () {
-                    onPosition(event.timeStamp, event.position);
-                    onScroll(event.delta.dy);
-                  },
-                ),
-        onPointerUp: locked ? null : (_) => onEnd(),
-        onPointerCancel: locked ? null : (_) => onEnd(),
-        child: child,
+        child: Listener(
+          behavior: HitTestBehavior.deferToChild,
+          onPointerSignal: (ps) {
+            if (!widget.locked && ps is PointerScrollEvent) {
+              childScrollGuard(() => widget.onScroll(ps.delta.dy));
+            }
+          },
+          onPointerDown: widget.locked
+              ? null
+              : (event) => childScrollGuard(
+                    () => widget.onPosition(event.timeStamp, event.position),
+                  ),
+          onPointerMove: widget.locked
+              ? null
+              : (event) => childScrollGuard(
+                    () {
+                      widget.onPosition(event.timeStamp, event.position);
+                      widget.onScroll(event.delta.dy);
+                    },
+                  ),
+          onPointerUp: widget.locked ? null : (_) => widget.onEnd(),
+          onPointerCancel: widget.locked ? null : (_) => widget.onEnd(),
+          child: widget.child,
+        ),
       );
 }
